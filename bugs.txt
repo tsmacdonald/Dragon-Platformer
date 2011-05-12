@@ -1,0 +1,39 @@
+* Somewhat arbitrary walking and flapping animations.
+
+* Player image is sometimes backwards. (Go right while flapping, turn left, flap->flapping image will face right)
+
+* Enemies sometimes start in incorrect locations.
+
+* Player sometimes starts outside of the level (and falls eternally)
+
+* Using rects instead of bitmap masks for collisions makes for some frustrating deaths.
+
+* Player sometimes can't jump from the very edge of a platform.
+
+* Enemies sometimes take entirely too long to turn around after hitting a wall.
+
+* Looking is jerky.
+
+* Almost every image has non-transparent artifacts.
+
+* 200pt powerup blends in to background (minor...hopefully there'll be a background change and it'll get fixed)
+
+* Appropriate way to deal with player death (lives; restart level; earn new lives from points)
+-------------------------------------------------------------------------------
+
+Creative Needs:
+
+* Put in the 1000/2000/5000/10-shot powerup images.
+
+* Make about ten more enemies.
+
+* More traps (electrified something; NOT fire; maybe some kind of ice thing)
+
+* Background tiles
+
+* Platform tiles
+
+* A plot :P
+    - Some kind of introductory explanation
+
+

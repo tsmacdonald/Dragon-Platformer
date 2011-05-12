@@ -1,0 +1,12 @@
+from pygame.locals import *
+
+LEFT = K_LEFT
+RIGHT = K_RIGHT
+LOOK_DOWN = K_DOWN
+LOOK_UP = K_UP
+DOWN = K_DOWN
+JUMP = K_LCTRL
+FLAP = K_LALT
+SHOOT = K_SPACE
+SKIP = K_s
+QUIT = K_q
