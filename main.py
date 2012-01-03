@@ -26,7 +26,7 @@ if DEBUG: import pdb
 if not pygame.font: print 'Warning, fonts disabled'
 if not pygame.mixer: print 'Warning, sound disabled'
 
-def deal_with_keys(key, player, projectiles):
+def process_keys(key, player, projectiles):
     window_offset = 0
 
     #Movement
@@ -105,9 +105,10 @@ def kill_player(player, level, level_list, active_things, engine, window, screen
     
 
 def main():
-    """Main loop. Initializes everything and runs continuously until the game ends or is quit.""" 
+    """Main loop. Initializes everything and runs continuously until the game
+       ends or is quit.""" 
     pygame.init()
-    screen = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
     WIDTH, HEIGHT = screen.get_width(), screen.get_height()
     pygame.mouse.set_visible(False)
 
@@ -135,11 +136,11 @@ def main():
 
     window = pygame.Rect(max(player.position.x - (WIDTH / 2), 0), #x
                          player.position.bottom - HEIGHT + VERT_BUFFER, #y
-                         WIDTH, HEIGHT)
+                         WIDTH, HEIGHT) #dimensions
 #Main Loop
     while True:
         clock.tick(FPS)
-        
+
         #Fix window / active creatures/things
         active_things.empty()
 
@@ -152,7 +153,8 @@ def main():
                 creature.acceleration.y = GRAVITY
             creatures_moving = True
  
-        window_offset = deal_with_keys(pygame.key.get_pressed(), player, friendly_projectiles)        
+        window_offset = process_keys(pygame.key.get_pressed(), player,\
+                                     friendly_projectiles)        
         window.y += window_offset
        
         potential_bottom = player.position.bottom + VERT_BUFFER
@@ -164,12 +166,13 @@ def main():
         window.top = max(window.top, 0)
         window.bottom = min(window.bottom, level.height + VERT_BUFFER)
         
-        for thing in (level.creatures.sprites() + [player] + friendly_projectiles.sprites() +
-                      enemy_projectiles.sprites() + level.powerups.sprites() + [level.exit]):
+        for thing in (level.creatures.sprites() + [player, level.exit] +
+                      friendly_projectiles.sprites() +
+                      enemy_projectiles.sprites() + level.powerups.sprites()):
              if thing.position.colliderect(window):
                 active_things.add(thing)
 
-       # Collision with powerups
+        # Collision with powerups
         for thing in level.powerups.sprites():
             if thing.position.colliderect(player.position):
                 thing.use(player)
@@ -177,7 +180,8 @@ def main():
         for projectiles in friendly_projectiles, enemy_projectiles:
             for bullet in projectiles.sprites():
                 for platform in level.platforms.sprites():
-                    if bullet.position.colliderect(platform.position) and not isinstance(platform, things.InvisiblePlatform):
+                    if (not isinstance(platform, things.InvisiblePlatform)
+                        and bullet.position.colliderect(platform.position)):
                         projectiles.remove(bullet)
  
         #Check for death / completion
@@ -200,7 +204,13 @@ def main():
             player.velocity.x = player.velocity.y = 0
             player.jumping = False
             creatures_moving = False
-            level = level_list.next_level()
+            try:
+                level = level_list.next_level()
+            except IOError:
+                message("You win!", (255, 0, 0), 26, None, (window.width / 2, window.height / 2), screen, "center")
+                pygame.display.flip()
+                pygame.time.wait(1000 * 3)
+                return
             eng.level = level
             eng.player = player
             player.position.topleft = level.starting_pos
@@ -214,14 +224,12 @@ def main():
         for event in pygame.event.get():
             if event.type == QUIT:
                 return
-        
 
         #Update
         # Gives the creatures and platforms a chance to do something cool.
         # Currently, all that means is that they set their relative position
         active_things.update(window, enemy_projectiles)
         level.platforms.update(window)
-        #level.background.set_relative_position(window)
         
         #Collision detection / physics / etc.
         time = clock.get_time()
@@ -229,15 +237,13 @@ def main():
 
         player.tick(time)
 
-       #Draw Everything
-        #pygame.sprite.Group(level.background).draw(screen)
+        #Draw Everything
         active_tiles.empty()
         for tile in level.tiles.sprites():
             if tile.position.colliderect(window):
                 active_tiles.add(tile)
         active_tiles.update(window)
         active_tiles.draw(screen)
-        #print clock.get_fps()
         level.platforms.draw(screen)
         active_things.draw(screen)
         draw_HUD(screen, player, clock)
