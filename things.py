@@ -1,13 +1,16 @@
 import pygame
 import constants
 import utils
+import mediahandler
 
 
 class Thing(pygame.sprite.Sprite):
+    """Wrapper class around PyGame's sprite, which adds a few game-specific
+       methods required for any game object drawn on-screen."""
     def __init__(self, filename=None, directory="images", colorkey = -1):
         pygame.sprite.Sprite.__init__(self)
         if filename is not None:
-            self.image, self.rect = utils.load_image(filename, directory, colorkey = colorkey)
+            self.image, self.rect = mediahandler.load_image(filename, directory, colorkey = colorkey)
             self.position = pygame.rect.Rect(self.rect)
                
         
@@ -17,22 +20,16 @@ class Thing(pygame.sprite.Sprite):
         
     def update(self, window, projectiles=None):
         Thing.set_relative_position(self, window)
-  
-    def set_slices(self, p=None, size=1):
-        if p == None:
-            p = self.position
-        self.right_slice = pygame.rect.Rect(p.right - size, p.top, size, p.height)
-        self.left_slice  = pygame.rect.Rect(p.left, p.top, size, p.height)
-        self.top_slice   = pygame.rect.Rect(p.left, p.top, p.width, size)
-        self.bottom_slice= pygame.rect.Rect(p.left, p.bottom - size, p.width, size)
 
 class Tile(Thing):
+    """A background, er, tile. (That is, an image.)"""
     def __init__(self, position, filename):
         Thing.__init__(self, filename, "tiles", None)
         self.position = pygame.rect.Rect(self.rect)
         self.position.topleft = position
 
 class Exit(Thing):
+    """The door that marks the end of the level."""
     def __init__(self, position):
         Thing.__init__(self, "exit.png")
         self.position = pygame.rect.Rect(self.rect)
@@ -40,6 +37,7 @@ class Exit(Thing):
 
 
 class Powerup(Thing):
+    """Something to be run into for points or other enhancements."""
     def __init__(self, position, filename):
         Thing.__init__(self, filename, "powerups")
         self.position = pygame.rect.Rect(self.rect)
@@ -47,12 +45,20 @@ class Powerup(Thing):
     
 
 class Ammo(Powerup):
+    """Powerup for adding ammunition."""
     def __init__(self, position, amount):
         Powerup.__init__(self, position, "fireweed.png")
         self.amount = amount
 
     def use(self, player):
         player.shots += self.amount
+
+##############################################################################
+# Almost all of the classes that follow are just very thin wrappers around
+# some Ammo or Points that hardcode certain values. This is because the level
+# parser does not have the ability to add arbitrary arguments when it
+# instantiates things.
+###############################################################################
 
 class Gun5(Ammo):
     def __init__(self, position):
@@ -71,6 +77,7 @@ class Gun10_2(Ammo):
         Ammo.__init__(self, position, 10)
 
 class Points(Powerup):
+    """Powerup for adding points."""
     def __init__(self, position, points):
         possible = (100, 200, 500, 1000, 2000, 5000)
         if points not in possible:
@@ -118,7 +125,10 @@ class P5000(Points):
         Points.__init__(self, position, 5000)
 
 class Life(Points):
-    pass
+    pass #TODO
+
+# Eventually all the _2 classes will take up a different sector of the tile
+# (so that some powerups can be left-aligned and some right-aligned). TODO
 
 class P100_2(Points):
     def __init__(self, position):
@@ -147,10 +157,14 @@ class P5000_2(Points):
 class Life_2(Points):
     pass
 
+###############################################################################
+
 class Projectile(Thing):
+    """A fireball, laserbeam, or whatever else that flies through the air and
+       damages things."""
     def __init__(self, starting_pos, velocity, filename, direction):
         Thing.__init__(self)
-        self.image, self.rect = utils.load_image(filename, "projectiles", -1)
+        self.image, self.rect = mediahandler.load_image(filename, "projectiles", -1)
         self.rect.topleft = starting_pos
         self.position = pygame.rect.Rect(self.rect)
         self.desired_position = pygame.rect.Rect(self.position)
@@ -158,16 +172,17 @@ class Projectile(Thing):
         self.acceleration = utils.Vector(0, constants.GRAVITY if direction == "down" else 0)
         
 class Trap:
+    """A stationary enemy."""
     def take_a_hit(self):
         pass
 
 class Platform(Thing):
+    """A solid surface on which Creatures can stand."""
     def __init__(self, filename, position):
         Thing.__init__(self)
-        self.image, self.rect = utils.load_image(filename, "platforms")
+        self.image, self.rect = mediahandler.load_image(filename, "platforms")
         self.rect.topleft = position
         self.position = pygame.rect.Rect(self.rect)
-        Thing.set_slices(self)
         self.type = "Platform"
     
     def update(self, window):
@@ -175,6 +190,7 @@ class Platform(Thing):
 
         
 class ColoredPlatform(Platform):
+    """Platform subclass that makes it easy to specify solid color fills."""
     def __init__(self, color, position, size, transparent=False):
         Thing.__init__(self)
         self.image = pygame.Surface(size)
@@ -184,16 +200,20 @@ class ColoredPlatform(Platform):
         self.rect = self.image.get_rect()
         self.rect.topleft = position
         self.position = pygame.rect.Rect(self.rect)
-        Thing.set_slices(self)
 
 class InvisiblePlatform(ColoredPlatform):
+    """A platform not seen or felt by the player. Used to control NPC
+       movement."""
     def __init__(self, position, tilesize):
         ColoredPlatform.__init__(self, pygame.Color("white"), position, (tilesize, tilesize), True)
 
 class HiddenPlatform(ColoredPlatform):
+    """A platform that can be felt but not seen by the player. Used to make
+       levels harder."""
     def __init__(self, position, tilesize):
         ColoredPlatform.__init__(self, pygame.Color("white"), position, (tilesize, tilesize), True)
 
+# The next few classes are required by the parser. See above note.
 class Plat_Black(ColoredPlatform):
     def __init__(self, position, tilesize):
         ColoredPlatform.__init__(self, pygame.Color("black"), position, (tilesize, tilesize))
@@ -214,6 +234,8 @@ class Plat_Yellow(ColoredPlatform):
     def __init__(self, position, tilesize):
         ColoredPlatform.__init__(self, pygame.Color("yellow"), position, (tilesize, tilesize))
 
+
+#TODO
 class Plat1:
     pass
 

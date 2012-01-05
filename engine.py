@@ -4,6 +4,7 @@ from creatures import Creature, Player
 from things import InvisiblePlatform, Trap
 
 class Engine():
+    """The physics engine, responsible for moving things in a sensible way."""
     def __init__(self, player, level, friendly_projectiles, enemy_projectiles):
         self.player = player
         self.level = level
@@ -11,41 +12,48 @@ class Engine():
         self.enemy_projectiles = enemy_projectiles
 
     def move_everyone(self):
+        """Sets everyone's position to their desired position. This should be called
+           after the desired position has been modified to deal with platform
+           collisions."""
         for c in (self.level.creatures.sprites() +
                 [self.player] + self.enemy_projectiles.sprites() + self.friendly_projectiles.sprites()):
             c.position = copy(c.desired_position)
 
     def update(self, time):
+        """Advances everything by the given time (in milliseconds)."""
         self.kinematics(time)
         self.do_collisions()
         self.move_everyone()
     
     def kinematicize(self, critter, time):
+        """Sets the critter's desired position and actual velocity, according
+           to the Laws of Motion."""
         critter.desired_position.x = critter.position.x + (critter.velocity.x * time)
         critter.desired_position.y = critter.position.y + (critter.velocity.y * time)
         critter.velocity.x += critter.acceleration.x * time
         critter.velocity.y += critter.acceleration.y * time
             
     def kinematics(self, time):
+        """Advances everyone's velocity and desired position."""
         time /= 1000.0 #milliseconds to seconds
         for critter in (self.level.creatures.sprites() +
                         self.enemy_projectiles.sprites() + self.friendly_projectiles.sprites() + [self.player]):
             self.kinematicize(critter, time)
     
     def do_collisions(self):
+        """Checks collisions with projectiles, platforms, traps, and enemies."""
         self.projectile_collisions()
         self.platform_collisions()
         self.player_death_collision()
 
     def player_death_collision(self):
+        """Checks if the player has run into anything that kills him."""
+        #Bad encapsulation! I shouldn't mix game logic with physics
         if self.player.position.collidelist([x.position for x in self.level.creatures.sprites()]) != -1:
             self.player.dead = True
-        #x = pygame.sprite.spritecollide(self.player, self.level.creatures, False)
-        #if x:
-        #    print x[0].rect.bottom, self.player.rect.top
-        #    self.player.dead = True
 
     def projectile_collisions(self):
+        """Checks if anyone has run into an enemy projectile."""
         for critter in self.level.creatures:
             if pygame.sprite.spritecollide(critter, self.friendly_projectiles, True):
                 critter.take_a_hit()
@@ -54,6 +62,7 @@ class Engine():
             
 
     def platform_collisions(self):
+        """Ensures everyone is stopped by a platform (and doesn't go through it)."""
         platform_positions = []
         for x in self.level.platforms: platform_positions.append(x.position)
         for critter in self.level.creatures.sprites() + [self.player]:
@@ -65,25 +74,23 @@ class Engine():
                 critter.landed = False
 
     def _perform_collisions(self, critter, platforms):
-        #x_mask = pygame.mask.from_surface(critter)
-        #y_mask = pygame.mask.from_surface(critter)
+        """Determines if the given critter is intersecting any platforms, and sets
+           the desired position appropriately."""
         des_x = pygame.rect.Rect(critter.desired_position)
         des_x.top = critter.position.top
         des_y = pygame.rect.Rect(critter.desired_position)
         des_y.right = critter.position.right
         for platform in platforms:
-            if isinstance(critter, Player) and isinstance(platform, InvisiblePlatform):
-                continue
+            if (isinstance(critter, Player) and
+                isinstance(platform, InvisiblePlatform)):
+                continue #Player can't get stopped by invisible platforms
             if des_x.colliderect(platform.position):    
-                if True: #pygame.sprite.collide_mask(critter, platform):
-                    critter.desired_position.x = critter.position.x
-                    #critter.velocity.x = 0
-                    critter.hitwall()
+                critter.desired_position.x = critter.position.x
+                critter.hitwall()
             if des_y.colliderect(platform.position):
-                if True: #pygame.sprite.collide_mask(critter, platform):
-                   if critter.down_p():
-                        critter.landed = True
-                   critter.desired_position.top = critter.position.top
-                   critter.velocity.y = 0
-                   critter.jumping = False
+               if critter.down_p():
+                    critter.landed = True
+               critter.desired_position.top = critter.position.top
+               critter.velocity.y = 0
+               critter.jumping = False
 

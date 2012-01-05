@@ -8,8 +8,8 @@ from creatures import *
 from things import *
 
 class BaseLevel():
+    """Basic level class. Defines the width, height, platforms, and such."""
     def __init__(self, filename=None):
-        #self.background = Thing(filename, "backgrounds")
         self.width = 0
         self.height = 0
         self.platforms = pygame.sprite.Group()
@@ -18,9 +18,11 @@ class BaseLevel():
         self.tiles = pygame.sprite.Group()
         self.exit = None
         self.starting_pos = None
-        self.bg_name = Utils.get_background_name(filename)
+        self.bg_name = get_background_name(filename)
     
     def make_walls(self, color=pygame.color.Color("black")):
+        """Surround the level with walls to prevent things from falling out
+           and getting lost."""
         #Bottom
         self.platforms.add(ColoredPlatform(color, (0, self.height), (self.width, constants.VERT_BUFFER)))
         #Top
@@ -31,27 +33,34 @@ class BaseLevel():
         self.platforms.add(ColoredPlatform(color, (self.width, 0), (constants.HOR_BUFFER, self.height)))
 
     def set_starting_position(self, player):
+        """Positions the player in the starting position of the level. If that
+           doesn't exist, puts the player near the bottom-left corner."""
         if self.starting_pos is not None:
             player.position.topleft = self.starting_pos
         else:
             player.position.x, player.position.y = 5, self.height - 5
         
 class Parser():
+    """Parses a given level file and constructs a Level object from it."""
     def __init__(self, level, filename, tilesize = 32):
         self.level = level
         self.filename = filename
         self.tilesize = tilesize
+        self.ignore = (".", "#")
+
+        # This associates characters found in level files with classes to be
+        # instantiated.
         self.map = {"@" : None,
                     "!" : Exit,
-                    "z" : P100,
+                    "z" : P100,#Points
                     "x" : P200,
                     "c" : P500,
                     "v" : P1000,
                     "b" : P2000,
                     "n" : P5000,
-                    "m" : Gun5,
+                    "m" : Gun5,#Ammo pickups
                     "," : Gun10,
-                    "/" : Life,
+                    "/" : Life,#+1 pickup
                     "Z" : P100_2,
                     "X" : P200_2,
                     "C" : P500_2,
@@ -61,7 +70,7 @@ class Parser():
                     "M" : Gun5_2,
                     "<" : Gun10_2,
                     "?" : Life_2,
-                    "a" : M1,
+                    "a" : M1, #Monsters
                     "s" : M2,
                     "d" : M3,
                     "f" : M4,
@@ -72,7 +81,7 @@ class Parser():
                     "l" : M9,
                     ";" : M10,
                     "'" : M11,
-                    "A" : T1,
+                    "A" : T1, #Traps
                     "S" : T2,
                     "D" : T3,
                     "F" : T4,
@@ -81,7 +90,7 @@ class Parser():
                     "J" : T7,
                     "K" : T8,
                     "L" : T9,
-                    "Q" : InvisiblePlatform,
+                    "Q" : InvisiblePlatform, #Platforms
                     "W" : HiddenPlatform,
                     "q" : Plat_Black,
                     "w" : Plat_Red,
@@ -97,6 +106,7 @@ class Parser():
                     "]" : Plat7}
    
     def parse(self):
+        """Performs the actual parsing, mutating self.level with the results."""
         row, column, step = 0, 0, self.tilesize
         longest = 0
         with open(self.filename) as file:
@@ -107,7 +117,7 @@ class Parser():
                     position = (column * step, (row + 0) * step)
                     if char == "\n":
                         break
-                    if char not in (".", "#"):
+                    if char not in self.ignore:
                         x = self.map[char]
                         if char == "@":
                             self.level.starting_pos = position
@@ -129,6 +139,8 @@ class Parser():
         self.level.height = (row + 0) * self.tilesize
          
 class Level(BaseLevel):
+    """Glue between Parser and BaseLevel. A BaseLevel subclass that constructs
+       itself from a given .level file."""
     def __init__(self, filename):
         BaseLevel.__init__(self, filename + ".png")
         self.creatures.empty()
@@ -136,9 +148,10 @@ class Level(BaseLevel):
         self.powerups.empty()
         Parser(self, os.path.join("levels", filename + ".level")).parse()
         BaseLevel.make_walls(self)
-        self.bg_name = Utils.get_background_name(filename)
+        self.bg_name = get_background_name(filename)
 
 class LevelList():
+    """Iterator that controls the order of levels."""
     def __init__(self):
         self.list = ["level%d"%i for i in xrange(1, 10)]
         self.pointer = 0
@@ -149,32 +162,28 @@ class LevelList():
         return level
 
     def same_level(self):
-        self.pointer -= 1
-        level = Level(self.list[self.pointer])
-        self.pointer += 1
+        level = Level(self.list[self.pointer - 1])
         return level
 
-class Utils():
-    @staticmethod
-    def get_background_name(filename):
-        if filename == None:
-            print "No filename for level!"
-            return "" #Garbage in, garbage out...
-        try:
-            number = int(filename.replace("level", "").replace(".png", ""))
-        except ValueError:
-            print '"%s" is an unacceptable level name!'%filename
-            return ""
-        if number == 1:
-            return "keen5_1.png"
-        elif number == 2:
-            return "keen5_1.png"
-        elif number == 3:
-            return "keen5_2.png"
-        elif number == 4:
-            return "keen5_1.png"
-        elif number == 5:
-            return "keen5_2.png"
-        else:
-            print "Warning: Using default background..."
-            return "keen5_1.png"
+def get_background_name(filename):
+    if filename == None:
+        print "No filename for level!"
+        return "" #Garbage in, garbage out...
+    try:
+        number = int(filename.replace("level", "").replace(".png", ""))
+    except ValueError:
+        print '"%s" is an unacceptable level name!'%filename
+        return ""
+    if number == 1:
+        return "keen5_1.png"
+    elif number == 2:
+        return "keen5_1.png"
+    elif number == 3:
+        return "keen5_2.png"
+    elif number == 4:
+        return "keen5_1.png"
+    elif number == 5:
+        return "keen5_2.png"
+    else:
+        print "Warning: Using default background..."
+        return "keen5_1.png"

@@ -1,10 +1,14 @@
 import pygame
+import mediahandler
 import utils
+
 
 from time import clock, time
 from constants import *
 from things import Thing, Projectile, Trap
 from ai import AI
+from vector import Vector
+from animation import Animator
 import os
 
 class Creature(Thing):
@@ -16,9 +20,9 @@ class Creature(Thing):
         # self.position is the ABSOLUTE position
         Thing.__init__(self, filename)
         
-        self.velocity = utils.Vector(velocity[0], velocity[1], y_max = max_y)
-        self.acceleration = utils.Vector(acceleration[0], acceleration[1])
-        self.default_velocity = utils.Vector(default_velocity[0], default_velocity[1])
+        self.velocity = Vector(velocity[0], velocity[1], y_max = max_y)
+        self.acceleration = Vector(acceleration[0], acceleration[1])
+        self.default_velocity = Vector(default_velocity[0], default_velocity[1])
         
         self.position = pygame.rect.Rect(self.rect)
         self.position.topleft = position
@@ -77,10 +81,9 @@ class Creature(Thing):
             self.landed = False
             self.jumping = True
             self.velocity.y = self.jump_amount
-            #self.position.y -= 9
-    
     
     def make_contact(self):
+	"""To be called when the Creature first hits the ground."""
         self.position.bottom = rect.bottom
         self.velocity.y = 0
         self.jumping = False
@@ -103,6 +106,8 @@ class Creature(Thing):
         return True if self.velocity.y > 0 else False
     
     def fire(self, projectiles, image, speed, direction, offset=0):
+	"""Shoots, using the given image, speed, and direction, and adding the
+	   projectile to the given group."""
         time_ = time()
         if (self.reload_time + self.reload_wait) < time_:
             if self.motion == "left":
@@ -119,8 +124,8 @@ class Creature(Thing):
         return False
 
     def hitwall(self):
+	"""To be called when the Creature hits a wall."""
         self.AI.hitwall(self)
-
 
     def __str__(self):
         return """
@@ -133,6 +138,8 @@ class Creature(Thing):
         """%(type(self).__name__, self.position.left, self.position.top, self.rect.height, self.rect.width, self.rect.left, self.rect.top, self.velocity.x, self.velocity.y)
 
 class Player(Creature):
+    """Creature subclass that has added features for the player (such as the
+       ability to flap wings and collect points."""
     def __init__(self, filename, position,
                 default_velocity = [PLAYER_DEF_V, 0.0],
                 velocity = [0.0, 0.0],
@@ -147,21 +154,21 @@ class Player(Creature):
         walking_image_names = ["%s.png"%i for i in range(1, 3)]
         walking_images = []
         for i in walking_image_names:
-            walking_images += [utils.load_image(i, os.path.join("images", "player_walking"), -1, False)]
+            walking_images += [mediahandler.load_image(i, os.path.join("images", "player_walking"), -1, False)]
 
         flapping_image_names = ["%s.png"%i for i in range(1, 5)]
         flapping_images = []
         for i in flapping_image_names:
-            flapping_images += [utils.load_image(i, os.path.join("images", "player_flapping"), -1, False)]
+            flapping_images += [mediahandler.load_image(i, os.path.join("images", "player_flapping"), -1, False)]
         
-        normal_image = utils.load_image("1.png", os.path.join("images", "player_normal"), -1, False)
+        normal_image = mediahandler.load_image("1.png", os.path.join("images", "player_normal"), -1, False)
         self.image = normal_image
         
-        walking_animator = utils.Animator(walking_images)
-        flapping_animator = utils.Animator(flapping_images)
+        walking_animator = Animator(walking_images)
+        flapping_animator = Animator(flapping_images)
         self.stances = {"walking" : walking_animator,
                         "flapping": flapping_animator,
-                        "normal"  : utils.Animator([normal_image])}
+                        "normal"  : Animator([normal_image])}
         
         self.anim_time = 0
         self.anim_threshold = 75
