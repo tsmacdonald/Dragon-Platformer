@@ -15,7 +15,7 @@
 #    You should have received a copy of the GNU General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-profiling = False
+profiling = True
 
 import os
 import pygame
@@ -144,7 +144,6 @@ def main():
 
     eng = engine.Engine(player, level, friendly_projectiles, enemy_projectiles)
 
-    active_tiles = pygame.sprite.Group() #Tiles to be drawn
     motion_counter = 0 #Ugly workaround to keep creatures from moving while level's loaded
     creatures_moving = False
 
@@ -263,12 +262,10 @@ def main():
         player.tick(time)
 
         #Draw Everything
-        active_tiles.empty()
         for tile in level.tiles.sprites():
             if tile.position.colliderect(window):
-                active_tiles.add(tile)
-        active_tiles.update(window)
-        active_tiles.draw(screen)
+                tile.update(window)
+                screen.blit(tile.image, tile.rect)
         level.platforms.draw(screen)
         active_things.draw(screen)
         draw_HUD(screen, player, clock)

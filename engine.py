@@ -63,8 +63,7 @@ class Engine():
 
     def platform_collisions(self):
         """Ensures everyone is stopped by a platform (and doesn't go through it)."""
-        platform_positions = []
-        for x in self.level.platforms: platform_positions.append(x.position)
+        platform_positions = [x.position for x in self.level.platforms]
         for critter in self.level.creatures.sprites() + [self.player]:
             plat_indices = critter.desired_position.collidelistall(platform_positions)
             plats = [self.level.platforms.sprites()[i] for i in plat_indices]
@@ -72,6 +71,10 @@ class Engine():
                 self._perform_collisions(critter, plats)
             else:
                 critter.landed = False
+
+    def __sign(self, x):
+        if x == 0: return 0
+        return abs(x) / x
 
     def _perform_collisions(self, critter, platforms):
         """Determines if the given critter is intersecting any platforms, and sets
@@ -84,13 +87,33 @@ class Engine():
             if (isinstance(critter, Player) and
                 isinstance(platform, InvisiblePlatform)):
                 continue #Player can't get stopped by invisible platforms
-            if des_x.colliderect(platform.position):    
+            if des_x.colliderect(platform.position): 
+                dx = critter.desired_position.x - critter.position.x
+                x_sign = self.__sign(dx)
                 critter.desired_position.x = critter.position.x
+                if x_sign != 0:
+                    #Incrementally move the critter until it's flush against the platform
+                    while not critter.desired_position.colliderect(platform.position):
+                        critter.desired_position.x += x_sign
+                        dx -= 1
+                        if dx < 0:
+                            break
+                    critter.desired_position.x -= x_sign
                 critter.hitwall()
             if des_y.colliderect(platform.position):
-               if critter.down_p():
+                if critter.down_p():
                     critter.landed = True
-               critter.desired_position.top = critter.position.top
-               critter.velocity.y = 0
-               critter.jumping = False
+                dy = critter.desired_position.y - critter.position.y
+                y_sign = self.__sign(dy)
+                if y_sign != 0:
+                    critter.desired_position.y = critter.position.y
+                    while not critter.desired_position.colliderect(platform.position):
+                        critter.desired_position.y += y_sign
+                        dy -= 1
+                        if dy < 0:
+                            break
+                    critter.desired_position.y -= y_sign
+               #critter.desired_position.top = critter.position.top
+                critter.velocity.y = 0
+                critter.jumping = False
 

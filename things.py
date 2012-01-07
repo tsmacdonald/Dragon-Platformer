@@ -19,7 +19,7 @@ class Thing(pygame.sprite.Sprite):
         self.rect.y = self.position.y - window.y
         
     def update(self, window, projectiles=None):
-        Thing.set_relative_position(self, window)
+        self.set_relative_position(window)
 
 class Tile(Thing):
     """A background, er, tile. (That is, an image.)"""
