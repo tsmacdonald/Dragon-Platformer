@@ -10,11 +10,15 @@ def load_image(filename, directory = "images", colorkey = None, return_rect = Tr
     except pygame.error, message:
         print 'Cannot load image:', fullname
         raise SystemExit, message
-    image = image.convert()
-    if colorkey is not None:
-        if colorkey is -1:
-            colorkey = image.get_at((0,0))
-        image.set_colorkey(colorkey, RLEACCEL)
+    if colorkey is not None and image.get_at((0, 0))[3] == 0:
+        #Image has a real alpha channel; colorkeying would punch holes
+        image = image.convert_alpha()
+    else:
+        image = image.convert()
+        if colorkey is not None:
+            if colorkey is -1:
+                colorkey = image.get_at((0,0))
+            image.set_colorkey(colorkey, RLEACCEL)
     if return_rect:
         return image, image.get_rect()
     else:

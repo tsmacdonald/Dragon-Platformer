@@ -3,7 +3,6 @@ import os
 
 import constants
 import tilemerge
-import utils
 
 from creatures import *
 from things import *
@@ -39,7 +38,7 @@ class BaseLevel():
         if self.starting_pos is not None:
             player.position.topleft = self.starting_pos
         else:
-            player.position.x, player.position.y = 5, self.height - 5
+            player.position.bottomleft = (5, self.height - 5)
         
 class Parser():
     """Parses a given level file and constructs a Level object from it."""
@@ -56,55 +55,20 @@ class Parser():
                     "z" : P100,#Points
                     "x" : P200,
                     "c" : P500,
-                    "v" : P1000,
-                    "b" : P2000,
                     "n" : P5000,
                     "m" : Gun5,#Ammo pickups
                     "," : Gun10,
-                    "/" : Life,#+1 pickup
-                    "Z" : P100_2,
-                    "X" : P200_2,
-                    "C" : P500_2,
-                    "V" : P1000_2,
-                    "B" : P2000_2,
-                    "N" : P5000_2,
-                    "M" : Gun5_2,
-                    "<" : Gun10_2,
-                    "?" : Life_2,
                     "a" : M1, #Monsters
                     "s" : M2,
                     "d" : M3,
-                    "f" : M4,
-                    "g" : M5,
-                    "h" : M6,
-                    "j" : M7,
-                    "k" : M8,
-                    "l" : M9,
-                    ";" : M10,
-                    "'" : M11,
                     "A" : T1, #Traps
-                    "S" : T2,
-                    "D" : T3,
-                    "F" : T4,
-                    "G" : T5,
-                    "H" : T6,
-                    "J" : T7,
-                    "K" : T8,
-                    "L" : T9,
                     "Q" : InvisiblePlatform, #Platforms
                     "W" : HiddenPlatform,
                     "q" : Plat_Black,
                     "w" : Plat_Red,
                     "e" : Plat_Green,
                     "r" : Plat_Blue,
-                    "t" : Plat_Yellow,
-                    "y" : Plat1,
-                    "u" : Plat2,
-                    "i" : Plat3,
-                    "o" : Plat4,
-                    "p" : Plat5,
-                    "[" : Plat6,
-                    "]" : Plat7}
+                    "t" : Plat_Yellow}
    
     def parse(self):
         """Performs the actual parsing, mutating self.level with the results."""
@@ -126,7 +90,11 @@ class Parser():
                         elif issubclass(x, Exit):
                             self.level.exit = Exit(position)
                         elif issubclass(x, Creature):
-                            self.level.creatures.add(x(position))
+                            #Anchor feet to the marker tile's bottom edge, since
+                            #most creatures are taller than one tile
+                            critter = x(position)
+                            critter.position.bottomleft = (position[0], position[1] + step)
+                            self.level.creatures.add(critter)
                         elif issubclass(x, Platform):
                             platform_cells.setdefault(x, set()).add((column, row))
                         elif issubclass(x, Powerup):
@@ -161,7 +129,7 @@ class Level(BaseLevel):
 class LevelList():
     """Iterator that controls the order of levels."""
     def __init__(self):
-        self.list = ["level%d"%i for i in xrange(1, 10)]
+        self.list = ["level%d"%i for i in range(1, 10)]
         self.pointer = 0
 
     def next_level(self):
@@ -174,24 +142,8 @@ class LevelList():
         return level
 
 def get_background_name(filename):
-    if filename == None:
-        print "No filename for level!"
-        return "" #Garbage in, garbage out...
     try:
         number = int(filename.replace("level", "").replace(".png", ""))
-    except ValueError:
-        print '"%s" is an unacceptable level name!'%filename
+    except (AttributeError, ValueError):
         return ""
-    if number == 1:
-        return "keen5_1.png"
-    elif number == 2:
-        return "keen5_1.png"
-    elif number == 3:
-        return "keen5_2.png"
-    elif number == 4:
-        return "keen5_1.png"
-    elif number == 5:
-        return "keen5_2.png"
-    else:
-        print "Warning: Using default background..."
-        return "keen5_1.png"
+    return {3: "keen5_2.png", 5: "keen5_2.png"}.get(number, "keen5_1.png")

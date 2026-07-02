@@ -15,7 +15,7 @@ class Animator():
         if direction == self.direction:
             return
         else:
-          for i in xrange(len(self.image_list)):
+          for i in range(len(self.image_list)):
               self.image_list[i] = pygame.transform.flip(self.image_list[i], True, False)
           self.direction = direction
     

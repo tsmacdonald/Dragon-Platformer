@@ -1,24 +1,37 @@
 * Somewhat arbitrary walking and flapping animations.
 
-* Player image is sometimes backwards. (Go right while flapping, turn left, flap->flapping image will face right)
-
-* Enemies sometimes start in incorrect locations.
-
-* Player sometimes starts outside of the level (and falls eternally)
-
-* Using rects instead of bitmap masks for collisions makes for some frustrating deaths.
-
-* Player sometimes can't jump from the very edge of a platform.
-
-* Enemies sometimes take entirely too long to turn around after hitting a wall.
-
 * Looking is jerky.
 
-* Almost every image has non-transparent artifacts.
+* Some images without alpha channels (m1-m3, spacemouse, the fireballs) still
+  have colorkey fringe artifacts; needs asset touch-up, not code.
 
-* 200pt powerup blends in to background (minor...hopefully there'll be a background change and it'll get fixed)
+* Appropriate way to deal with player death (lives; restart level; earn new
+  lives from points)
 
-* Appropriate way to deal with player death (lives; restart level; earn new lives from points)
+-------------------------------------------------------------------------------
+
+Fixed:
+
+* Player image is sometimes backwards. (All stances now flip on turn.)
+
+* Enemies sometimes start in incorrect locations. (Creatures now spawn with
+  their feet anchored to the marker tile; anything embedded in a platform gets
+  pushed out.)
+
+* Player sometimes starts outside of the level (and falls eternally).
+
+* Using rects instead of bitmap masks for collisions makes for some
+  frustrating deaths. (Deaths and projectile hits are now mask-based.)
+
+* Player sometimes can't jump from the very edge of a platform. ("Landed" no
+  longer flickers while standing still.)
+
+* Enemies sometimes take entirely too long to turn around after hitting a
+  wall. (Turnaround debounce cut from 1s to 0.25s.)
+
+* Almost every image has non-transparent artifacts. (Images with real alpha
+  channels no longer get colorkeyed to death.)
+
 -------------------------------------------------------------------------------
 
 Creative Needs:
@@ -35,5 +48,3 @@ Creative Needs:
 
 * A plot :P
     - Some kind of introductory explanation
-
-

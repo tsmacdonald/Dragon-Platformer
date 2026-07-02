@@ -1,9 +1,8 @@
 import pygame
 import mediahandler
-import utils
 
 
-from time import clock, time
+from time import time
 from constants import *
 from things import Thing, Projectile, Trap
 from ai import AI
@@ -50,6 +49,7 @@ class Creature(Thing):
             self.velocity.x = self.default_velocity.x * (-1 if direction == "left" else 1)
         if self.motion != direction:
             self.image = pygame.transform.flip(self.image, True, False)
+            self.mask = pygame.mask.from_surface(self.image)
         self.motion = direction
     
     def turn_around(self):
@@ -82,12 +82,6 @@ class Creature(Thing):
             self.jumping = True
             self.velocity.y = self.jump_amount
     
-    def make_contact(self):
-	"""To be called when the Creature first hits the ground."""
-        self.position.bottom = rect.bottom
-        self.velocity.y = 0
-        self.jumping = False
-
     def take_a_hit(self, damage = 1):
         self.health -= damage
         if self.health <= 0:
@@ -106,8 +100,8 @@ class Creature(Thing):
         return True if self.velocity.y > 0 else False
     
     def fire(self, projectiles, image, speed, direction, offset=0):
-	"""Shoots, using the given image, speed, and direction, and adding the
-	   projectile to the given group."""
+        """Shoots, using the given image, speed, and direction, and adding the
+           projectile to the given group."""
         time_ = time()
         if (self.reload_time + self.reload_wait) < time_:
             if self.motion == "left":
@@ -124,7 +118,7 @@ class Creature(Thing):
         return False
 
     def hitwall(self):
-	"""To be called when the Creature hits a wall."""
+        """To be called when the Creature hits a wall."""
         self.AI.hitwall(self)
 
     def __str__(self):
@@ -189,16 +183,12 @@ class Player(Creature):
 
     def hitwall(self):
         pass
- 
+
     def flap(self):
         if not self.flapping:
             self.flapping = True
             self.acceleration.y += self.flap_amount
-    
-    def make_contact(self):
-        Creature.make_contact(self, rect)
-        self.unflap()
-        
+
     def unflap(self):
         if self.flapping:
             self.flapping = False
@@ -218,16 +208,22 @@ class Player(Creature):
 
     def _turn(self, direction, reset_velocity = True):
         if reset_velocity:
-            self.velocity.x = self.default_velocity.x * (-1 if direction == "left" else 1) 
-        self.stances[self.get_stance()].turn(direction)
+            self.velocity.x = self.default_velocity.x * (-1 if direction == "left" else 1)
+        if self.motion != direction:
+            #Flip every stance, not just the current one, so the image still
+            #faces the right way after a stance change
+            for animator in self.stances.values():
+                animator.turn(direction)
+            self.image = pygame.transform.flip(self.image, True, False)
+            self.mask = pygame.mask.from_surface(self.image)
         self.motion = direction
 
     def tick(self, time):
-        #self.fuel = min(100.0, self.fuel + self.fuel * time / 1000.0 * self.recharge_rate)
         self.anim_time += time
         if self.anim_time >= self.anim_threshold:
             self.anim_time = 0
             self.image = self.stances[self.get_stance()].next()
+            self.mask = pygame.mask.from_surface(self.image)
 
     points = property(get_points, set_points)
  
@@ -272,61 +268,9 @@ class M3(NPC):
             self.last_shot = time_
         
 
-class M4:
-    pass
-
-class M5:
-    pass
-
-class M6:
-    pass
-
-class M7:
-    pass
-
-class M8:
-    pass
-
-class M9:
-    pass
-
-class M10:
-    pass
-
-class M11:
-    pass
-
 class T1(Trap, NPC):
     def __init__(self, position):
         NPC.__init__(self, "spikes.png",
                      position = position,
                      default_velocity = (0, 0),
                      velocity = (0, 0))
-
-class T2(NPC, Trap):
-    pass
-class T3(NPC, Trap):
-    pass
-class T4(NPC, Trap):
-    pass
-
-class T5(NPC, Trap):
-    pass
-
-class T6(NPC, Trap):
-    pass
-
-class T7(NPC, Trap):
-    pass
-
-class T8(NPC, Trap):
-    pass
-
-class T9(NPC, Trap):
-    pass
-
-class T10(NPC, Trap):
-    pass
-
-class T11(NPC, Trap):
-    pass

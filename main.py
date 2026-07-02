@@ -20,7 +20,6 @@ profiling = False
 import os
 import pygame
 import creatures, levels, engine, controls, things
-from utils import Vector
 from pygame.locals import *
 from constants import *
 if DEBUG: import pdb
@@ -76,7 +75,7 @@ def message(text, color, size, font, position, screen, point = "topleft"):
         font = pygame.font.Font(font, size)
         text = font.render(text, True, color)
         rect = text.get_rect()
-        exec("rect.%s = position"%point) # :(
+        setattr(rect, point, position)
         screen.blit(text, rect)
     else:
         print "No font! Can't display text in HUD.\nMessage was:", text
@@ -90,15 +89,14 @@ def draw_HUD(screen, player, clock):
     for msg, y in zip(elements, range(0, offset * len(elements), offset)):
         message(str(msg), (255, 0, 0), 36, None, (0, y), screen)
 
-def kill_player(player, level, level_list, active_things,
-                engine, window, screen):
+def kill_player(player, level_list, engine, window, screen):
     """Resets things appropriately for when the player dies. If the player has
        no more lives left, exits the program. Returns the level the player
        should be put on."""
     level = level_list.same_level()
     engine.level = level
     engine.player = player
-    player.position.topleft = level.starting_pos
+    level.set_starting_position(player)
     player.velocity.x = player.velocity.y = 0
     player.jumping = False
     player.lives -= 1
@@ -209,7 +207,7 @@ def main():
         #Check for death / completion
         level.creatures.remove(filter(lambda x: x.dead, level.creatures))
         if player.dead:
-            level = kill_player(player, level, level_list, active_things, eng, window, screen)
+            level = kill_player(player, level_list, eng, window, screen)
             creatures_moving = False
             motion_counter = 0
             clock.tick()
@@ -238,7 +236,7 @@ def main():
                 return
             eng.level = level
             eng.player = player
-            player.position.topleft = level.starting_pos
+            level.set_starting_position(player)
             motion_counter = 0
             clock.tick()
             continue

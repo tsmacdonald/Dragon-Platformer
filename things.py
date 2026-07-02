@@ -1,6 +1,6 @@
 import pygame
 import constants
-import utils
+import vector
 import mediahandler
 
 
@@ -11,9 +11,10 @@ class Thing(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         if filename is not None:
             self.image, self.rect = mediahandler.load_image(filename, directory, colorkey = colorkey)
+            self.mask = pygame.mask.from_surface(self.image)
             self.position = pygame.rect.Rect(self.rect)
-               
-        
+
+
     def set_relative_position(self, window):
         self.rect.x = self.position.x - window.x
         self.rect.y = self.position.y - window.y
@@ -53,12 +54,8 @@ class Ammo(Powerup):
     def use(self, player):
         player.shots += self.amount
 
-##############################################################################
-# Almost all of the classes that follow are just very thin wrappers around
-# some Ammo or Points that hardcode certain values. This is because the level
-# parser does not have the ability to add arbitrary arguments when it
-# instantiates things.
-###############################################################################
+# The classes that follow are thin wrappers that hardcode values, because the
+# level parser can't pass arbitrary arguments when it instantiates things.
 
 class Gun5(Ammo):
     def __init__(self, position):
@@ -68,35 +65,14 @@ class Gun10(Ammo):
     def __init__(self, position):
         Ammo.__init__(self, position, 10)
 
-class Gun5_2(Ammo):
-    def __init__(self, position):
-        Ammo.__init__(self, position, 5)
-
-class Gun10_2(Ammo):
-    def __init__(self, position):
-        Ammo.__init__(self, position, 10)
-
 class Points(Powerup):
     """Powerup for adding points."""
+    images = {100: "coins.png", 200: "spikefruit.png",
+              500: "spacemouse.png", 5000: "many_coins.png"}
     def __init__(self, position, points):
-        possible = (100, 200, 500, 1000, 2000, 5000)
-        if points not in possible:
-            raise Exception("Your level designer is an idiot.")
         self.points = points
-        if points == possible[0]:
-            filename = "coins"
-        elif points == possible[1]:
-            filename = "spikefruit"
-        elif points == possible[2]:
-            filename = "spacemouse"
-        elif points == possible[5]:
-            filename = "many_coins"
-        else:
-            print "Bad point value, somehow"
-            import sys; sys.exit(1)
-        filename += ".png"
-        Powerup.__init__(self, position, filename)
-    
+        Powerup.__init__(self, position, self.images[points])
+
     def use(self, player):
         player.points += self.points
 
@@ -112,52 +88,9 @@ class P500(Points):
     def __init__(self, position):
         Points.__init__(self, position, 500)
 
-class P1000(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 1000)
-
-class P2000(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 2000)
-
 class P5000(Points):
     def __init__(self, position):
         Points.__init__(self, position, 5000)
-
-class Life(Points):
-    pass #TODO
-
-# Eventually all the _2 classes will take up a different sector of the tile
-# (so that some powerups can be left-aligned and some right-aligned). TODO
-
-class P100_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 100)
-
-class P200_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 200)
-
-class P500_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 500)
-
-class P1000_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 1000)
-
-class P2000_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 2000)
-
-class P5000_2(Points):
-    def __init__(self, position):
-        Points.__init__(self, position, 5000)
-
-class Life_2(Points):
-    pass
-
-###############################################################################
 
 class Projectile(Thing):
     """A fireball, laserbeam, or whatever else that flies through the air and
@@ -165,11 +98,12 @@ class Projectile(Thing):
     def __init__(self, starting_pos, velocity, filename, direction):
         Thing.__init__(self)
         self.image, self.rect = mediahandler.load_image(filename, "projectiles", -1)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect.topleft = starting_pos
         self.position = pygame.rect.Rect(self.rect)
         self.desired_position = pygame.rect.Rect(self.position)
-        self.velocity = utils.Vector(velocity if direction != "down" else 0, abs(velocity * 1.5) if direction == "down" else 0)
-        self.acceleration = utils.Vector(0, constants.GRAVITY if direction == "down" else 0)
+        self.velocity = vector.Vector(velocity if direction != "down" else 0, abs(velocity * 1.5) if direction == "down" else 0)
+        self.acceleration = vector.Vector(0, constants.GRAVITY if direction == "down" else 0)
         
 class Trap:
     """A stationary enemy."""
@@ -233,28 +167,3 @@ class Plat_Blue(ColoredPlatform):
 class Plat_Yellow(ColoredPlatform):
     def __init__(self, position, size):
         ColoredPlatform.__init__(self, pygame.Color("yellow"), position, size)
-
-
-#TODO
-class Plat1:
-    pass
-
-class Plat2:
-    pass
-
-class Plat3:
-    pass
-
-class Plat4:
-    pass
-
-class Plat5:
-    pass
-
-class Plat6:
-    pass
-
-class Plat7:
-    pass
-
-

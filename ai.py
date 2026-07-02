@@ -3,7 +3,7 @@ from time import time
 class AI():
     def __init__(self):
         self.time = time()
-        self.timeout = 1
+        self.timeout = 0.25
 
     def hitwall(self, critter):
         """Called whenever the given critter hits a wall. In this case, turns

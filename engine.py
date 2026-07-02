@@ -3,6 +3,14 @@ from copy import copy
 from creatures import Player
 from things import InvisiblePlatform
 
+def _hit(a, b):
+    """Pixel-perfect collision on absolute positions. (The default rect
+       collision is both too coarse and stale for off-screen sprites.)"""
+    if not a.position.colliderect(b.position):
+        return False
+    offset = (b.position.x - a.position.x, b.position.y - a.position.y)
+    return a.mask.overlap(b.mask, offset) is not None
+
 class Engine():
     """The physics engine, responsible for moving things in a sensible way."""
     def __init__(self, player, level, friendly_projectiles, enemy_projectiles):
@@ -49,18 +57,17 @@ class Engine():
     def player_death_collision(self):
         """Checks if the player has run into anything that kills him."""
         #Bad encapsulation! I shouldn't mix game logic with physics
-        if self.player.position.collidelist([x.position for x in self.level.creatures.sprites()]) != -1:
-            self.player.dead = True
+        for critter in self.level.creatures:
+            if _hit(self.player, critter):
+                self.player.dead = True
+                return
 
     def projectile_collisions(self):
-        """Checks if anyone has run into a projectile. Compares absolute
-           positions rather than the default screen-relative rects, which are
-           stale for anything that is off-screen."""
-        hit = lambda a, b: a.position.colliderect(b.position)
+        """Checks if anyone has run into a projectile."""
         for critter in self.level.creatures:
-            if pygame.sprite.spritecollide(critter, self.friendly_projectiles, True, hit):
+            if pygame.sprite.spritecollide(critter, self.friendly_projectiles, True, _hit):
                 critter.take_a_hit()
-        if pygame.sprite.spritecollide(self.player, self.enemy_projectiles, True, hit):
+        if pygame.sprite.spritecollide(self.player, self.enemy_projectiles, True, _hit):
             self.player.dead = True
 
     def platform_collisions(self):
