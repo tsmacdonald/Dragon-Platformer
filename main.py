@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 #    Copyright 2011 Tim Macdonald <tsmacdonald@gmail.com>
 #
@@ -24,8 +24,8 @@ from pygame.locals import *
 from constants import *
 if DEBUG: import pdb
 
-if not pygame.font: print "Warning, fonts disabled"
-if not pygame.mixer: print "Warning, sound disabled"
+if not pygame.font: print("Warning, fonts disabled")
+if not pygame.mixer: print("Warning, sound disabled")
 
 def process_keys(key, player, projectiles):
     """Causes the player to respond to the given input. This involves looking,
@@ -78,7 +78,7 @@ def message(text, color, size, font, position, screen, point = "topleft"):
         setattr(rect, point, position)
         screen.blit(text, rect)
     else:
-        print "No font! Can't display text in HUD.\nMessage was:", text
+        print("No font! Can't display text in HUD.\nMessage was:", text)
 
 def draw_HUD(screen, player, clock):
     """Draws the given player's HUD on the screen. Includes the points, shots
@@ -102,14 +102,14 @@ def kill_player(player, level_list, engine, window, screen):
     player.lives -= 1
     if player.lives < 0:
         message("Game Over!",
-                (255, 0, 0), 36, None, (window.width / 2, window.height / 2),
+                (255, 0, 0), 36, None, (window.width // 2, window.height // 2),
                 screen, "center")
         pygame.display.flip()
         pygame.time.wait(1 * 3000)
         import sys; sys.exit(0)
     else:
         message("You have died!",
-                (255, 0, 0), 36, None, (window.width / 2, window.height / 2),
+                (255, 0, 0), 36, None, (window.width // 2, window.height // 2),
                  screen, "center")
         pygame.display.flip()
         pygame.time.wait(1 * 2000)
@@ -148,7 +148,7 @@ def main():
 
     pygame.display.flip()
 
-    window = pygame.Rect(max(player.position.x - (WIDTH / 2), 0), #x
+    window = pygame.Rect(max(player.position.x - (WIDTH // 2), 0), #x
                          player.position.bottom - HEIGHT + VERT_BUFFER, #y
                          WIDTH, HEIGHT) #dimensions
     #Main game loop
@@ -177,9 +177,9 @@ def main():
         potential_bottom = player.position.bottom + VERT_BUFFER
         window.bottom = max(potential_bottom, window.bottom)
 
-        window.left = max(player.position.centerx - (WIDTH / 2), 0)
+        window.left = max(player.position.centerx - (WIDTH // 2), 0)
         window.right = min(window.right, level.width)
-        window.top = min(window.top, player.position.top - (HEIGHT / 6))
+        window.top = min(window.top, player.position.top - (HEIGHT // 6))
         window.top = max(window.top, 0)
         window.bottom = min(window.bottom, level.height + VERT_BUFFER)
         
@@ -205,7 +205,7 @@ def main():
                     projectiles.remove(bullet)
  
         #Check for death / completion
-        level.creatures.remove(filter(lambda x: x.dead, level.creatures))
+        level.creatures.remove([c for c in level.creatures if c.dead])
         if player.dead:
             level = kill_player(player, level_list, eng, window, screen)
             creatures_moving = False
@@ -230,7 +230,7 @@ def main():
             try:
                 level = level_list.next_level()
             except IOError: #Throw up a temporary "you win" message until a proper last level is devised
-                message("You win!", (255, 0, 0), 36, None, (window.width / 2, window.height / 2), screen, "center")
+                message("You win!", (255, 0, 0), 36, None, (window.width // 2, window.height // 2), screen, "center")
                 pygame.display.flip()
                 pygame.time.wait(1000 * 3)
                 return
