@@ -2,6 +2,7 @@ import pygame
 import os
 
 import constants
+import tilemerge
 import utils
 
 from creatures import *
@@ -109,6 +110,7 @@ class Parser():
         """Performs the actual parsing, mutating self.level with the results."""
         row, column, step = 0, 0, self.tilesize
         longest = 0
+        platform_cells = {} #Maps platform classes to sets of (column, row)
         with open(self.filename) as file:
             for line in file.readlines():
                 column = 0
@@ -126,13 +128,19 @@ class Parser():
                         elif issubclass(x, Creature):
                             self.level.creatures.add(x(position))
                         elif issubclass(x, Platform):
-                            self.level.platforms.add(x(position, self.tilesize))
+                            platform_cells.setdefault(x, set()).add((column, row))
                         elif issubclass(x, Powerup):
                             self.level.powerups.add(x(position))
                     if column % 2 == row % 2 == 0:#elif issubclass(x, Tile):
                         self.level.tiles.add(Tile(position, self.level.bg_name))
                     column += 1
                 row += 1
+        #Merge each platform type's tiles into rectangles, so that a run of
+        #adjacent tiles becomes one big Platform instead of many small ones.
+        for x, cells in platform_cells.items():
+            for tile_x, tile_y, tile_w, tile_h in tilemerge.merge_cells(cells):
+                self.level.platforms.add(x((tile_x * step, tile_y * step),
+                                           (tile_w * step, tile_h * step)))
         for i in range(0, row, 2):
             self.level.tiles.add(Tile(((column + 0) * step, i * step), self.level.bg_name))
         self.level.width = (longest - 1) * self.tilesize

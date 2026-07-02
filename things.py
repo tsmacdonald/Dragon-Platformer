@@ -204,35 +204,35 @@ class ColoredPlatform(Platform):
 class InvisiblePlatform(ColoredPlatform):
     """A platform not seen or felt by the player. Used to control NPC
        movement."""
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("white"), position, (tilesize, tilesize), True)
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("white"), position, size, True)
 
 class HiddenPlatform(ColoredPlatform):
     """A platform that can be felt but not seen by the player. Used to make
        levels harder."""
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("white"), position, (tilesize, tilesize), True)
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("white"), position, size, True)
 
 # The next few classes are required by the parser. See above note.
 class Plat_Black(ColoredPlatform):
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("black"), position, (tilesize, tilesize))
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("black"), position, size)
 
 class Plat_Red(ColoredPlatform):
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("red"), position, (tilesize, tilesize))
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("red"), position, size)
 
 class Plat_Green(ColoredPlatform):
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("green"), position, (tilesize, tilesize))
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("green"), position, size)
 
 class Plat_Blue(ColoredPlatform):
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("blue"), position, (tilesize, tilesize))
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("blue"), position, size)
 
 class Plat_Yellow(ColoredPlatform):
-    def __init__(self, position, tilesize):
-        ColoredPlatform.__init__(self, pygame.Color("yellow"), position, (tilesize, tilesize))
+    def __init__(self, position, size):
+        ColoredPlatform.__init__(self, pygame.Color("yellow"), position, size)
 
 
 #TODO

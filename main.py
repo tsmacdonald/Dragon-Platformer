@@ -146,6 +146,7 @@ def main():
 
     motion_counter = 0 #Ugly workaround to keep creatures from moving while level's loaded
     creatures_moving = False
+    skipping = False
 
     pygame.display.flip()
 
@@ -198,12 +199,12 @@ def main():
                 level.powerups.remove(thing)
 
         # Check if projectiles hit wall
+        solid_positions = [platform.position for platform in level.platforms
+                           if not isinstance(platform, things.InvisiblePlatform)]
         for projectiles in friendly_projectiles, enemy_projectiles:
             for bullet in projectiles.sprites():
-                for platform in level.platforms.sprites():
-                    if (not isinstance(platform, things.InvisiblePlatform)
-                        and bullet.position.colliderect(platform.position)):
-                        projectiles.remove(bullet)
+                if bullet.position.collidelist(solid_positions) != -1:
+                    projectiles.remove(bullet)
  
         #Check for death / completion
         level.creatures.remove(filter(lambda x: x.dead, level.creatures))

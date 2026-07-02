@@ -1,7 +1,7 @@
-import pygame, constants
+import pygame
 from copy import copy
-from creatures import Creature, Player
-from things import InvisiblePlatform, Trap
+from creatures import Player
+from things import InvisiblePlatform
 
 class Engine():
     """The physics engine, responsible for moving things in a sensible way."""
@@ -53,67 +53,101 @@ class Engine():
             self.player.dead = True
 
     def projectile_collisions(self):
-        """Checks if anyone has run into an enemy projectile."""
+        """Checks if anyone has run into a projectile. Compares absolute
+           positions rather than the default screen-relative rects, which are
+           stale for anything that is off-screen."""
+        hit = lambda a, b: a.position.colliderect(b.position)
         for critter in self.level.creatures:
-            if pygame.sprite.spritecollide(critter, self.friendly_projectiles, True):
+            if pygame.sprite.spritecollide(critter, self.friendly_projectiles, True, hit):
                 critter.take_a_hit()
-        if pygame.sprite.spritecollide(self.player, self.enemy_projectiles, True):
+        if pygame.sprite.spritecollide(self.player, self.enemy_projectiles, True, hit):
             self.player.dead = True
-            
 
     def platform_collisions(self):
         """Ensures everyone is stopped by a platform (and doesn't go through it)."""
-        platform_positions = [x.position for x in self.level.platforms]
+        platforms = self.level.platforms.sprites()
+        positions = [p.position for p in platforms]
         for critter in self.level.creatures.sprites() + [self.player]:
-            plat_indices = critter.desired_position.collidelistall(platform_positions)
-            plats = [self.level.platforms.sprites()[i] for i in plat_indices]
-            if len(plats) > 0:
-                self._perform_collisions(critter, plats)
-            else:
-                critter.landed = False
-
-    def __sign(self, x):
-        if x == 0: return 0
-        return abs(x) / x
+            #Search everything the critter could touch along this frame's
+            #whole movement, so that fast movers can't tunnel through thin
+            #platforms. inflate(2, 2) grows the search area by one pixel per
+            #side so platforms the critter is resting flush against count too.
+            swept = critter.position.union(critter.desired_position).inflate(2, 2)
+            nearby = [platforms[i] for i in swept.collidelistall(positions)]
+            self._perform_collisions(critter, nearby)
 
     def _perform_collisions(self, critter, platforms):
-        """Determines if the given critter is intersecting any platforms, and sets
-           the desired position appropriately."""
-        des_x = pygame.rect.Rect(critter.desired_position)
-        des_x.top = critter.position.top
-        des_y = pygame.rect.Rect(critter.desired_position)
-        des_y.right = critter.position.right
-        for platform in platforms:
-            if (isinstance(critter, Player) and
-                isinstance(platform, InvisiblePlatform)):
-                continue #Player can't get stopped by invisible platforms
-            if des_x.colliderect(platform.position): 
-                dx = critter.desired_position.x - critter.position.x
-                x_sign = self.__sign(dx)
-                critter.desired_position.x = critter.position.x
-                if x_sign != 0:
-                    #Incrementally move the critter until it's flush against the platform
-                    while not critter.desired_position.colliderect(platform.position):
-                        critter.desired_position.x += x_sign
-                        dx -= 1
-                        if dx < 0:
-                            break
-                    critter.desired_position.x -= x_sign
-                critter.hitwall()
-            if des_y.colliderect(platform.position):
-                if critter.down_p():
-                    critter.landed = True
-                dy = critter.desired_position.y - critter.position.y
-                y_sign = self.__sign(dy)
-                if y_sign != 0:
-                    critter.desired_position.y = critter.position.y
-                    while not critter.desired_position.colliderect(platform.position):
-                        critter.desired_position.y += y_sign
-                        dy -= 1
-                        if dy < 0:
-                            break
-                    critter.desired_position.y -= y_sign
-               #critter.desired_position.top = critter.position.top
+        """Clamps the critter's desired position so that it stops flush
+           against any platform in its way, resolving the horizontal axis
+           first and then the vertical axis."""
+        pos = critter.position
+        des = critter.desired_position
+        solid = [p.position for p in platforms
+                 if not (isinstance(critter, Player) and
+                         isinstance(p, InvisiblePlatform))]
+        critter.landed = False
+
+        for plat in solid:
+            if pos.colliderect(plat):
+                #Already overlapping (e.g. spawned inside a wall) -- rescue it
+                #rather than trying to resolve its movement normally.
+                self._unstick(critter, plat)
+                return
+
+        #Horizontal
+        dx = des.x - pos.x
+        hit_wall = False
+        for plat in solid:
+            if plat.top >= pos.bottom or plat.bottom <= pos.top:
+                continue #Not level with the critter; can't block it sideways
+            if dx > 0 and pos.right <= plat.left and des.right > plat.left:
+                des.right = plat.left
+                hit_wall = True
+            elif dx < 0 and pos.left >= plat.right and des.left < plat.right:
+                des.left = plat.right
+                hit_wall = True
+        if hit_wall:
+            critter.hitwall()
+
+        #Vertical (using the already-clamped horizontal extent)
+        dy = des.y - pos.y
+        for plat in solid:
+            if plat.left >= des.right or plat.right <= des.left:
+                continue #Not above or below the critter; can't block it
+            if dy > 0 and pos.bottom <= plat.top and des.bottom > plat.top:
+                des.bottom = plat.top
                 critter.velocity.y = 0
+                critter.landed = True
                 critter.jumping = False
+            elif dy < 0 and pos.top >= plat.bottom and des.top < plat.bottom:
+                des.top = plat.bottom
+                critter.velocity.y = 0
+            elif dy >= 0 and pos.bottom == plat.top:
+                #Resting exactly on top of the platform; stay "landed" even on
+                #frames where gravity rounds to zero pixels of movement.
+                critter.landed = True
+                critter.jumping = False
+
+    def _unstick(self, critter, platform):
+        """Pushes a critter that is already inside a platform back out, along
+           the axis of least penetration."""
+        pos = critter.position
+        des = critter.desired_position
+        penetration = {"up"   : pos.bottom - platform.top,
+                       "down" : platform.bottom - pos.top,
+                       "left" : pos.right - platform.left,
+                       "right": platform.right - pos.left}
+        direction = min(penetration, key=penetration.get)
+        if direction == "up":
+            des.bottom = platform.top
+            critter.velocity.y = 0
+            critter.landed = True
+            critter.jumping = False
+        elif direction == "down":
+            des.top = platform.bottom
+            critter.velocity.y = 0
+        elif direction == "left":
+            des.right = platform.left
+        else:
+            des.left = platform.right
 
